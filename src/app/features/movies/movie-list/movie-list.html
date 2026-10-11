@@ -11,7 +11,10 @@
 
   @switch (viewState()) {
     @case ('loading') {
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" aria-busy="true">
+      <div
+        class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        aria-busy="true"
+      >
         @for (i of skeletons; track i) {
           <div class="animate-pulse overflow-hidden rounded-xl bg-slate-900 ring-1 ring-white/10">
             <div class="aspect-[2/3] bg-slate-800"></div>

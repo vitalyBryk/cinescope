@@ -70,9 +70,9 @@ describe('MovieDetail', () => {
     expect(el.textContent).toContain('8.2');
     expect(el.textContent).toContain('2 ч 16 мин');
     expect(el.textContent).toContain('Хакер Нео');
-    expect([...el.querySelectorAll('[aria-label="Жанры"] li')].map((li) => li.textContent?.trim())).toEqual(
-      ['боевик', 'фантастика'],
-    );
+    expect(
+      [...el.querySelectorAll('[aria-label="Жанры"] li')].map((li) => li.textContent?.trim()),
+    ).toEqual(['боевик', 'фантастика']);
     expect(el.querySelector('img')?.getAttribute('src')).toBe(
       'https://image.tmdb.org/t/p/w500/poster.jpg',
     );
@@ -92,7 +92,9 @@ describe('MovieDetail', () => {
     await harness.navigateByUrl('/movie/abc', MovieDetail);
 
     http.expectNone(() => true);
-    expect(harness.routeNativeElement?.textContent).toContain('Фильм не найден.');
+    const alert = harness.routeNativeElement?.querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain('Фильм не найден.');
+    expect(alert?.querySelector('button')).toBeNull();
   });
 
   it('"Назад" goes to the home page when the movie was opened directly', async () => {

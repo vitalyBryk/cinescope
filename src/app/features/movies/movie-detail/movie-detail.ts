@@ -24,6 +24,7 @@ export class MovieDetail {
     const id = Number(this.id());
     return Number.isInteger(id) && id > 0 ? id : null;
   });
+  protected readonly isValidId = computed(() => this.movieId() !== null);
 
   // Ignore a previously opened movie still held by the service until the new one loads
   protected readonly movie = computed(() => {

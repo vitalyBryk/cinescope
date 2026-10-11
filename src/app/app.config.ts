@@ -20,5 +20,5 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(withFetch(), withInterceptors([tmdbInterceptor])),
     { provide: LOCALE_ID, useValue: 'ru' },
-  ]
+  ],
 };

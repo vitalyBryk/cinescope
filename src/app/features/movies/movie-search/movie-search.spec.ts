@@ -55,7 +55,9 @@ describe('MovieSearch', () => {
 
   it('searches immediately on submit and does not repeat it after the debounce', () => {
     type('Дюна');
-    (fixture.nativeElement as HTMLElement).querySelector('form')!.dispatchEvent(new Event('submit'));
+    (fixture.nativeElement as HTMLElement)
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit'));
 
     http.expectOne((r) => r.url === searchUrl).flush(emptyPage);
     vi.advanceTimersByTime(400);

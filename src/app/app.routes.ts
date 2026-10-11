@@ -4,8 +4,7 @@ export const routes: Routes = [
   {
     path: '',
     title: 'Cinescope — популярные фильмы',
-    loadComponent: () =>
-      import('./features/movies/movie-list/movie-list').then((m) => m.MovieList),
+    loadComponent: () => import('./features/movies/movie-list/movie-list').then((m) => m.MovieList),
   },
   {
     path: 'movie/:id',

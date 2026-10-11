@@ -1,61 +1,65 @@
 # Cinescope
 
-Test assignment for Hot Software
+Test assignment for Hot Software: an Angular app that lists and searches movies using the [TMDb API](https://developer.themoviedb.org/docs). The interface and movie data are in Russian.
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+## Features
 
-## Development server
+- **Popular movies.** The home page shows them as a responsive grid of cards with poster, title, year, rating and a short overview.
+- **Live search.** Results update 400 ms after you stop typing. The «Поиск» button or Enter searches immediately. Clearing the field (or pressing «×» or Esc) brings back the popular movies.
+- **Movie page** at `/movie/:id`. It shows the poster, title, original title, tagline, genres, rating, release date, runtime and overview. The «Назад» button returns to the list with your search kept.
+- **Loading, error and empty states** on every screen, with error messages in Russian and a «Повторить» button.
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
-```
+- Angular 21: standalone components, zoneless change detection, `OnPush`
+- **Signals** (`signal`, `computed`, `effect`, `input`) for all state
+- Built-in control flow: `@if`, `@for`, `@switch`
+- Angular Router with lazy-loaded pages and route params bound to component inputs
+- Tailwind CSS v4
+- Vitest for unit tests
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Getting started
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+Then open http://localhost:4200.
 
-To build the project run:
+The TMDb key is set in [src/environments/environment.ts](src/environments/environment.ts) (`tmdb.apiKey`). It must be a **v3 API key**. You can get one at https://www.themoviedb.org/settings/api.
 
-```bash
-ng build
+| Command | Description |
+|---|---|
+| `npm start` | Dev server at http://localhost:4200 |
+| `npm run build` | Production build into `dist/cinescope` |
+| `npm test` | Unit tests (watch mode). Add `-- --watch=false` for a single run. |
+
+## Project structure
+
+```
+src/app/
+├── core/
+│   ├── models/movie.model.ts          # TMDb response types
+│   ├── interceptors/tmdb.interceptor.ts  # adds api_key and language to TMDb requests
+│   └── services/movie.service.ts      # API calls + signal-based state
+├── features/movies/
+│   ├── movie-list/     # home page: search + grid, @switch over loading/error/empty/ready
+│   ├── movie-card/     # a single card linking to /movie/:id
+│   ├── movie-search/   # search field with debounced live search
+│   └── movie-detail/   # movie page loaded from the :id route param
+└── shared/pipes/tmdb-image.pipe.ts    # builds TMDb image URLs
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### How state works
 
-## Running unit tests
+`MovieService` keeps the state in private signals and exposes them read-only:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+- **Movie list:** `movies`, `loading`, `error`, `query` and `isEmpty`
+- **Movie page:** `movieDetails`, `detailsLoading` and `detailsError`
 
-```bash
-ng test
-```
+Components call `getPopularMovies()`, `searchMovies(keyword)` or `getMovieDetails(id)` and read the signals. A new request cancels a still-pending one, so a late response to an old query never overwrites newer results.
 
-## Running end-to-end tests
+---
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Movie data and images are provided by [TMDb](https://www.themoviedb.org). This product uses the TMDb API but is not endorsed or certified by TMDb.
