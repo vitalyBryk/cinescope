@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { MovieService } from '../../../core/services/movie.service';
 import { MovieCard } from '../movie-card/movie-card';
+import { MovieSearch } from '../movie-search/movie-search';
 
 type ViewState = 'loading' | 'error' | 'empty' | 'ready';
 
 @Component({
   selector: 'app-movie-list',
-  imports: [MovieCard],
+  imports: [MovieSearch, MovieCard],
   templateUrl: './movie-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
