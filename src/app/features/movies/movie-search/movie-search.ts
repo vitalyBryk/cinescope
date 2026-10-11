@@ -13,11 +13,9 @@ const SEARCH_DEBOUNCE_MS = 400;
 export class MovieSearch {
   private readonly movieService = inject(MovieService);
 
-  // Start from the active query so the field is filled when returning from a details page
   protected readonly term = signal(this.movieService.query());
 
   constructor() {
-    // Live search while typing
     toObservable(this.term)
       .pipe(
         skip(1),
@@ -32,7 +30,6 @@ export class MovieSearch {
     this.term.set((event.target as HTMLInputElement).value);
   }
 
-  /** "Поиск" button / Enter: search immediately without waiting for the debounce. */
   protected onSubmit(event: Event): void {
     event.preventDefault();
     this.search(this.term().trim());
@@ -44,7 +41,6 @@ export class MovieSearch {
   }
 
   private search(term: string): void {
-    // Skip if this query is already shown (e.g. the button was pressed before the debounce fired)
     if (term === this.movieService.query() && !this.movieService.error()) {
       return;
     }

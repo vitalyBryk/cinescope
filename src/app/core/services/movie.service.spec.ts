@@ -88,6 +88,20 @@ describe('MovieService', () => {
     expect(service.movies().map((m) => m.id)).toEqual([3]);
   });
 
+  it('keeps working after a failed request', () => {
+    service.getPopularMovies();
+    http
+      .expectOne((r) => r.url === `${apiUrl}/movie/popular`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    expect(service.error()).not.toBeNull();
+
+    service.searchMovies('Дюна');
+    http.expectOne((r) => r.url === `${apiUrl}/search/movie`).flush(page([movie(438631)]));
+
+    expect(service.error()).toBeNull();
+    expect(service.movies().map((m) => m.id)).toEqual([438631]);
+  });
+
   it('exposes a readable error and clears movies on failure', () => {
     service.getPopularMovies();
     http
@@ -116,6 +130,18 @@ describe('MovieService', () => {
 
     expect(service.detailsLoading()).toBe(false);
     expect(service.movieDetails()?.genres[0].name).toBe('боевик');
+  });
+
+  it('cancels a pending details request when another movie is opened', () => {
+    service.getMovieDetails(603);
+    service.getMovieDetails(438631);
+
+    expect(http.expectOne((r) => r.url === `${apiUrl}/movie/603`).cancelled).toBe(true);
+    http
+      .expectOne((r) => r.url === `${apiUrl}/movie/438631`)
+      .flush({ ...movie(438631), genres: [], runtime: null, tagline: '', status: '' });
+
+    expect(service.movieDetails()?.id).toBe(438631);
   });
 
   it('reports a missing movie', () => {

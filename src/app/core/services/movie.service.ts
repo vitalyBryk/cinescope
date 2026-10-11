@@ -1,21 +1,22 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Observable, Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, map, Observable, of, Subject, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Movie, MovieDetails, PaginatedResponse } from '../models/movie.model';
+
+type Result<T> = { data: T; error: null } | { data: null; error: string };
 
 @Injectable({ providedIn: 'root' })
 export class MovieService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.tmdb.apiUrl;
 
-  // Movie list state (popular movies or search results)
   private readonly moviesState = signal<Movie[]>([]);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private readonly queryState = signal('');
 
-  // Movie details state
   private readonly movieDetailsState = signal<MovieDetails | null>(null);
   private readonly detailsLoadingState = signal(false);
   private readonly detailsErrorState = signal<string | null>(null);
@@ -23,7 +24,7 @@ export class MovieService {
   readonly movies = this.moviesState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
   readonly error = this.errorState.asReadonly();
-  /** Current search query; empty string means the popular list is shown. */
+
   readonly query = this.queryState.asReadonly();
   readonly isEmpty = computed(
     () => !this.loadingState() && !this.errorState() && this.moviesState().length === 0,
@@ -33,9 +34,32 @@ export class MovieService {
   readonly detailsLoading = this.detailsLoadingState.asReadonly();
   readonly detailsError = this.detailsErrorState.asReadonly();
 
-  // Kept so a newer request cancels a still-pending older one
-  private listRequest?: Subscription;
-  private detailsRequest?: Subscription;
+  private readonly listRequests$ = new Subject<Observable<PaginatedResponse<Movie>>>();
+  private readonly detailsRequests$ = new Subject<number>();
+
+  constructor() {
+    this.listRequests$
+      .pipe(
+        switchMap((request$) => toResult(request$.pipe(map((response) => response.results)))),
+        takeUntilDestroyed(),
+      )
+      .subscribe((result) => {
+        this.moviesState.set(result.data ?? []);
+        this.errorState.set(result.error);
+        this.loadingState.set(false);
+      });
+
+    this.detailsRequests$
+      .pipe(
+        switchMap((id) => toResult(this.http.get<MovieDetails>(`${this.apiUrl}/movie/${id}`))),
+        takeUntilDestroyed(),
+      )
+      .subscribe((result) => {
+        this.movieDetailsState.set(result.data);
+        this.detailsErrorState.set(result.error);
+        this.detailsLoadingState.set(false);
+      });
+  }
 
   getPopularMovies(): void {
     this.queryState.set('');
@@ -58,40 +82,25 @@ export class MovieService {
   }
 
   getMovieDetails(id: number): void {
-    this.detailsRequest?.unsubscribe();
     this.movieDetailsState.set(null);
     this.detailsLoadingState.set(true);
     this.detailsErrorState.set(null);
-
-    this.detailsRequest = this.http.get<MovieDetails>(`${this.apiUrl}/movie/${id}`).subscribe({
-      next: (details) => {
-        this.movieDetailsState.set(details);
-        this.detailsLoadingState.set(false);
-      },
-      error: (err: unknown) => {
-        this.detailsErrorState.set(toErrorMessage(err));
-        this.detailsLoadingState.set(false);
-      },
-    });
+    this.detailsRequests$.next(id);
   }
 
   private loadList(request$: Observable<PaginatedResponse<Movie>>): void {
-    this.listRequest?.unsubscribe();
     this.loadingState.set(true);
     this.errorState.set(null);
-
-    this.listRequest = request$.subscribe({
-      next: (response) => {
-        this.moviesState.set(response.results);
-        this.loadingState.set(false);
-      },
-      error: (err: unknown) => {
-        this.moviesState.set([]);
-        this.errorState.set(toErrorMessage(err));
-        this.loadingState.set(false);
-      },
-    });
+    this.listRequests$.next(request$);
   }
+}
+
+/** Turns an HTTP error into a value, so one failed request does not end the whole stream. */
+function toResult<T>(request$: Observable<T>): Observable<Result<T>> {
+  return request$.pipe(
+    map((data): Result<T> => ({ data, error: null })),
+    catchError((err: unknown) => of<Result<T>>({ data: null, error: toErrorMessage(err) })),
+  );
 }
 
 function toErrorMessage(err: unknown): string {

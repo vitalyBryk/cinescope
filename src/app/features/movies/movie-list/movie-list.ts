@@ -27,7 +27,6 @@ export class MovieList implements OnInit {
   });
 
   ngOnInit(): void {
-    // Keep the current list (e.g. search results) when coming back from a details page
     if (this.movies().length === 0 && !this.movieService.loading()) {
       this.movieService.getPopularMovies();
     }

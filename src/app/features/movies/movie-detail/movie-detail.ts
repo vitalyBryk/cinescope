@@ -17,7 +17,6 @@ export class MovieDetail {
   private readonly router = inject(Router);
   private readonly title = inject(Title);
 
-  /** `:id` route param, bound via withComponentInputBinding(). */
   readonly id = input.required<string>();
 
   private readonly movieId = computed(() => {
@@ -26,7 +25,6 @@ export class MovieDetail {
   });
   protected readonly isValidId = computed(() => this.movieId() !== null);
 
-  // Ignore a previously opened movie still held by the service until the new one loads
   protected readonly movie = computed(() => {
     const movie = this.movieService.movieDetails();
     return movie?.id === this.movieId() ? movie : null;
@@ -61,7 +59,6 @@ export class MovieDetail {
   }
 
   protected goBack(): void {
-    // Angular stores a navigationId in history state; 1 means this page was opened directly
     const state = this.location.getState() as { navigationId?: number } | null;
     if ((state?.navigationId ?? 1) > 1) {
       this.location.back();
